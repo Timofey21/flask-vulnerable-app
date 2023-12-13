@@ -8,33 +8,35 @@
   </head>
   <body>
 
-  {% for item in blogs %}
-      <div class="container">
-          <div class="card">
-              <div class="card-body">
-                {{ item[1] | safe }}
-                <form action="/" method="post">
-                    <button type="submit" class="btn btn-danger" name="delete-btn" value={{ item[0] }}>delete</button>
-                </form>
+  <div class="container mt-4">
+      {% for item in blogs %}
+          <div class="container mt-2">
+              <div class="card">
+                  <div class="card-body">
+                      <div class="d-flex p-5">{{ item[1] | safe }}</div>
+                            <form action="/" method="post">
+                        <button type="submit" class="btn btn-danger btn-sm" name="delete-btn" value={{ item[0] }}>delete</button>
+                    </form>
+                  </div>
               </div>
           </div>
-      </div>
-  {% endfor %}
+      {% endfor %}
+  </div>
 
- <div class="container">
+ <div class="container mt-5 ml-2">
         <form action="/" method="post">
           <div class="form-group">
             <label for="exampleFormControlTextarea1">Write blog message</label>
-            <textarea class="form-control" id="exampleFormControlTextarea1" rows="3" name="message"></textarea>
-            <button type="submit" class="btn btn-primary">Submit</button>
+            <textarea class="form-control w-40" id="exampleFormControlTextarea1" rows="3" name="message"></textarea>
+            <button type="submit" class="btn btn-primary mt-2">Submit</button>
           </div>
 
         </form>
  </div>
 
- <div class="container">
+ <div class="container mt-2 ml-2">
      <form action="/" method="post">
-         <button type="submit" class="btn btn-primary" name="logout-button" value="1">Logout</button>
+         <button type="submit" class="btn btn-primary mb-5" name="logout-button" value="1">Logout</button>
      </form>
  </div>
 

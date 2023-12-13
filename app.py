@@ -3,7 +3,6 @@ import sqlite3
 from flask import Flask, render_template, render_template_string, request, redirect, session, abort
 from database import init_db
 
-
 app = Flask(__name__)
 
 app.secret_key = 'BAD_SECRET_KEY'
@@ -59,8 +58,11 @@ def register():
         username_check = cursor.fetchone()
         connection.commit()
 
+        if username_check == username:
+            message = "User is already existed "
+            return render_template_string(open('templates/register.html').read(), message=message)
 
-        if username and password1 == password2 and username_check != username:
+        if username and password1 == password2:
             cursor.execute('INSERT INTO users (username, password) VALUES (?, ?)', (username, password1))
             connection.commit()
 
@@ -120,8 +122,6 @@ def admin():
             return redirect('/login')
 
     return render_template("admin.html")
-
-
 
 
 if __name__ == '__main__':
