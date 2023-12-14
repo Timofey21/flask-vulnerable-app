@@ -35,7 +35,7 @@ def login():  # put application's code here
                 return redirect('/admin')
             else:
                 session['user'] = user[-2]
-                return redirect('/')
+                return redirect('/feed')
 
         else:
             message = "Login failed!"
@@ -122,6 +122,19 @@ def admin():
             return redirect('/login')
 
     return render_template("admin.html")
+
+@app.route('/feed')
+def feed():
+    connection = sqlite3.connect('demo.db')
+    cursor = connection.cursor()
+
+    cursor.execute("SELECT * FROM blogs")
+    connection.commit()
+    blogs = cursor.fetchall()
+    connection.close()
+    return render_template("feed.html", blogs=blogs)
+
+
 
 
 if __name__ == '__main__':
