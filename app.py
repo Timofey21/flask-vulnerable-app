@@ -16,9 +16,8 @@ def require_login():
 
 
 @app.route('/login', methods=['POST', 'GET'])
-def login():  # put application's code here
-
-    init_db()
+def login():
+    # init_db()
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
@@ -28,13 +27,16 @@ def login():  # put application's code here
         cursor.execute("SELECT * FROM users WHERE username = '{}' AND password = '{}'".format(username, password))
         user = cursor.fetchone()
         connection.close()
+        print(user)
 
         if user:
             if user[-2] == 'admin':
                 session['user'] = user[-2]
+                session['id'] = user[-3]
                 return redirect('/admin')
             else:
                 session['user'] = user[-2]
+                session['id'] = user[-3]
                 return redirect('/feed')
 
         else:
@@ -54,8 +56,9 @@ def register():
         password1 = request.form.get('password1')
         password2 = request.form.get('password2')
 
-        cursor.execute("SELECT * FROM users WHERE username = '{}'".format(username))
-        username_check = cursor.fetchone()
+        cursor.execute("SELECT username FROM users WHERE username = '{}'".format(username))
+        username_check = cursor.fetchone()[0]
+        print(username_check)
         connection.commit()
 
         if username_check == username:
@@ -76,9 +79,6 @@ def register():
 
 @app.route('/', methods=['POST', 'GET'])
 def main_page():
-    with sqlite3.connect('demo.db') as db:
-        db.execute('CREATE TABLE IF NOT EXISTS blogs (id INTEGER PRIMARY KEY, message TEXT)')
-        # db.execute("INSERT INTO blogs (message) VALUES ('bla bla')")
 
     connection = sqlite3.connect('demo.db')
     cursor = connection.cursor()
@@ -86,9 +86,10 @@ def main_page():
     if request.method == 'POST':
 
         message = request.form.get('message')
+        data_tuple = message, session['id']
 
         if message:
-            cursor.execute('INSERT INTO blogs (message) VALUES (?)', (message,))
+            cursor.execute('INSERT INTO blogs (message, user_id) VALUES (?, ?)', (data_tuple))
             connection.commit()
 
         delete_id = request.form.get('delete-btn')
@@ -103,7 +104,7 @@ def main_page():
             session.pop('user', default=None)
             return redirect('/login')
 
-    cursor.execute("SELECT * FROM blogs")
+    cursor.execute("SELECT blogs.id, message, username FROM blogs INNER JOIN users ON blogs.user_id = users.id")
     connection.commit()
     blogs = cursor.fetchall()
     connection.close()
@@ -123,18 +124,139 @@ def admin():
 
     return render_template("admin.html")
 
+
 @app.route('/feed')
 def feed():
     connection = sqlite3.connect('demo.db')
     cursor = connection.cursor()
 
-    cursor.execute("SELECT * FROM blogs")
+    cursor.execute("SELECT blogs.id, message, username FROM blogs INNER JOIN users ON blogs.user_id = users.id")
     connection.commit()
     blogs = cursor.fetchall()
     connection.close()
     return render_template("feed.html", blogs=blogs)
 
 
+@app.route('/profile', methods=['POST', 'GET'])
+def profile():
+    connection = sqlite3.connect('demo.db')
+    cursor = connection.cursor()
+
+    if request.method == 'POST':
+
+        message = request.form.get('message')
+        if message:
+            data_tuple = (message, session['id'])
+            cursor.execute('INSERT INTO blogs (message, user_id) VALUES (?, ?)', (data_tuple))
+            connection.commit()
+
+        delete_id = request.form.get('delete-btn')
+
+        if delete_id:
+            cursor.execute("DELETE FROM blogs WHERE id = ('{}')".format(delete_id))
+            connection.commit()
+
+        logout_button = request.form.get('logout-button')
+
+        if logout_button:
+            session.pop('user', default=None)
+            return redirect('/login')
+
+    cursor.execute("SELECT blogs.id, message, username FROM blogs INNER JOIN users ON blogs.user_id = users.id WHERE users.id = ('{}')".format(session['id']))
+    connection.commit()
+    blogs = cursor.fetchall()
+    connection.close()
+    return render_template("profile.html", blogs=blogs)
+
+
+@app.route('/change-password', methods=['POST', 'GET'])
+def change_password():
+    if request.method == 'POST':
+
+        connection = sqlite3.connect('demo.db')
+        cursor = connection.cursor()
+
+        password1 = request.form.get('password1')
+        password2 = request.form.get('password2')
+
+        if password1 == password2:
+            cursor.execute("UPDATE users SET password=('{}') WHERE id=('{}')".format(password1, session['id']))
+            connection.commit()
+
+    return render_template("change-password.html")
+
+
+@app.route('/manage-users', methods=['POST', 'GET'])
+def manage_users():
+    if session['user'] != 'admin':
+        abort(403)
+
+    connection = sqlite3.connect('demo.db')
+    cursor = connection.cursor()
+
+    delete_id = request.form.get('delete-btn')
+
+    if delete_id:
+        cursor.execute("DELETE FROM users WHERE id = ('{}')".format(delete_id))
+        connection.commit()
+
+    cursor.execute("SELECT id, username FROM users")
+    connection.commit()
+    users = cursor.fetchall()
+    connection.close()
+    return render_template("manage-users.html", blogs=users)
+
+
+@app.route('/change-password-admin', methods=['POST', 'GET'])
+def manage_users_admin():
+    print(session['user'])
+    if session['user'] != 'admin':
+        abort(403)
+
+    # referrer = request.referrer
+    # if referrer != 'http://127.0.0.1:5000/manage-users' or referrer != 'http://127.0.0.1:5000/change-password-admin':
+    #     abort(403)
+
+    if request.method == 'POST':
+
+        # uid = request.form.get('uid')
+
+        connection = sqlite3.connect('demo.db')
+        cursor = connection.cursor()
+
+        username = request.form.get('username')
+
+        password1 = request.form.get('password1')
+        password2 = request.form.get('password2')
+
+        if password1 == password2:
+            cursor.execute("UPDATE users SET password=('{}') WHERE username=('{}')".format(password1, username))
+            connection.commit()
+
+    return render_template("admin-change-password.html")
+
+
+@app.route('/manage-posts', methods=['POST', 'GET'])
+def manage_posts():
+    if session['user'] != 'admin':
+        abort(403)
+
+    connection = sqlite3.connect('demo.db')
+    cursor = connection.cursor()
+
+    if request.method == 'POST':
+
+        delete_id = request.form.get('delete-btn')
+
+        if delete_id:
+            cursor.execute("DELETE FROM blogs WHERE id = ('{}')".format(delete_id))
+            connection.commit()
+
+    cursor.execute("SELECT blogs.id, message, username FROM blogs INNER JOIN users ON blogs.user_id = users.id")
+    connection.commit()
+    blogs = cursor.fetchall()
+    connection.close()
+    return render_template("manage-posts.html", blogs=blogs)
 
 
 if __name__ == '__main__':

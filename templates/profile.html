@@ -8,8 +8,9 @@
   </head>
   <body>
 
-    <div class="container mt-5">
-      <a class="btn btn-primary" href="/profile" role="button">Profile</a>
+  <div class="container mt-5">
+      <a class="btn btn-primary" href="/feed" role="button">Feed</a>
+      <a class="btn btn-primary" href="/change-password" role="button">Change password</a>
   </div>
 
   <div class="container mt-4">
@@ -19,14 +20,27 @@
                   <div class="card-body">
                       <p>{{ item[2] | safe }}</p>
                       <div class="d-flex p-5">{{ item[1] | safe }}</div>
+                            <form action="/profile" method="post">
+                        <button type="submit" class="btn btn-danger btn-sm" name="delete-btn" value={{ item[0] }}>delete</button>
+                    </form>
                   </div>
               </div>
           </div>
       {% endfor %}
   </div>
 
+ <div class="container mt-5 ml-2">
+        <form action="/profile" method="post">
+          <div class="form-group">
+            <label for="exampleFormControlTextarea1">Write blog message</label>
+            <textarea class="form-control w-40" id="exampleFormControlTextarea1" rows="3" name="message"></textarea>
+            <button type="submit" class="btn btn-primary mt-2">Submit</button>
+          </div>
 
- <div class="container mt-3">
+        </form>
+ </div>
+
+ <div class="container mt-2 ml-2">
      <form action="/" method="post">
          <button type="submit" class="btn btn-primary mb-5" name="logout-button" value="1">Logout</button>
      </form>
