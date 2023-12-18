@@ -17,7 +17,6 @@ def require_login():
 
 @app.route('/login', methods=['POST', 'GET'])
 def login():
-    # init_db()
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
@@ -27,7 +26,6 @@ def login():
         cursor.execute("SELECT * FROM users WHERE username = '{}' AND password = '{}'".format(username, password))
         user = cursor.fetchone()
         connection.close()
-        print(user)
 
         if user:
             if user[-2] == 'admin':
@@ -57,22 +55,18 @@ def register():
         password2 = request.form.get('password2')
 
         cursor.execute("SELECT username FROM users WHERE username = '{}'".format(username))
-        username_check = cursor.fetchone()[0]
-        print(username_check)
-        connection.commit()
-
-        if username_check == username:
-            message = "User is already existed "
+        if cursor.fetchone():
+            message = "User is already exist"
             return render_template_string(open('templates/register.html').read(), message=message)
+        else:
+            if username and password1 == password2:
+                cursor.execute('INSERT INTO users (username, password) VALUES (?, ?)', (username, password1))
+                connection.commit()
 
-        if username and password1 == password2:
-            cursor.execute('INSERT INTO users (username, password) VALUES (?, ?)', (username, password1))
-            connection.commit()
+            if username == 'admin':
+                return redirect('/admin')
 
-        if username == 'admin':
-            return redirect('/admin')
-
-        return redirect('/login')
+            return redirect('/login')
 
     return render_template("register.html")
 
@@ -213,13 +207,7 @@ def manage_users_admin():
     if session['user'] != 'admin':
         abort(403)
 
-    # referrer = request.referrer
-    # if referrer != 'http://127.0.0.1:5000/manage-users' or referrer != 'http://127.0.0.1:5000/change-password-admin':
-    #     abort(403)
-
     if request.method == 'POST':
-
-        # uid = request.form.get('uid')
 
         connection = sqlite3.connect('demo.db')
         cursor = connection.cursor()
